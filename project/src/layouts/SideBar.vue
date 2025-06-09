@@ -95,6 +95,7 @@ async function logout() {
 
     loginStore.logout()
     alert('로그아웃 되었습니다.')
+    handleClick("");
   } catch (error) {
     console.error('로그아웃 실패:', error)
     alert('로그아웃 중 오류가 발생했습니다.')
