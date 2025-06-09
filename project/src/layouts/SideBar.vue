@@ -1,11 +1,19 @@
-<!-- TheSidebar.vue -->
 <script setup>
-import { ref } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 import { useLoginStore } from '@/stores/useLoginStore'
+import axios from 'axios'
+import defaultProfile from '@/assets/imgs/user-gray.svg'
+
+const userName = computed(() => loginStore.user?.name || '이름 없음')
+const profileImage = computed(() => loginStore.user?.profileImage || '')
+
+onMounted(() => {
+  loginStore.fetchLoggedInUser()
+})
 
 const router = useRouter()
+const activeButton = ref('')
 const loginStore = useLoginStore()
 
 const id = ref('')
@@ -15,6 +23,11 @@ const pwError = ref('')
 const showLoginForm = ref(false)
 const isLoginActive = ref(false)
 const isIdPwActive = ref(false)
+
+function handleClick(buttonType) {
+  activeButton.value = buttonType
+  router.push('/' + buttonType)
+}
 
 // 로그인 시도
 async function login() {
@@ -73,19 +86,38 @@ function goToFindIdPwPage() {
   isIdPwActive.value = true
   router.push('/find-idpw')
 }
+
+async function logout() {
+  try {
+    await axios.put('http://localhost:3000/loggedInUser', {
+      userId: '',
+    })
+
+    loginStore.logout()
+    alert('로그아웃 되었습니다.')
+  } catch (error) {
+    console.error('로그아웃 실패:', error)
+    alert('로그아웃 중 오류가 발생했습니다.')
+  }
+}
 </script>
 
 <template>
   <div class="navClass">
-    <nav id="nav-default">
+    <nav id="nav">
       <h1>
         <img
           role="button"
-          @click="() => router.push('/')"
+          @click="handleClick('main')"
           src="../assets/imgs/logo.png"
           alt="사이트로고"
         />
       </h1>
+
+      <div v-if="loginStore.isLoggedIn == true" class="nav-bar-profile">
+        <img :src="profileImage || defaultProfile" alt="사용자프로필" class="profile-img" />
+      </div>
+      <span v-if="loginStore.isLoggedIn == true" class="nav-bar-userName">{{ userName }}님</span>
 
       <div class="nav-login-wrapper">
         <transition name="slide-fade">
@@ -111,7 +143,29 @@ function goToFindIdPwPage() {
         </transition>
       </div>
 
-      <div class="nav-bar-btnbox">
+      <div v-if="loginStore.isLoggedIn == true" class="nav-bar-btnbox btn-isLoggedIn">
+        <button
+          :class="activeButton === 'main' ? 'btn-clicked' : 'btn-unclicked'"
+          @click="handleClick('main')"
+        >
+          재정요약
+        </button>
+        <button
+          :class="activeButton === 'history' ? 'btn-clicked' : 'btn-unclicked'"
+          @click="handleClick('history')"
+        >
+          거래내역조회
+        </button>
+        <button
+          :class="activeButton === 'myPage' ? 'btn-clicked' : 'btn-unclicked'"
+          @click="handleClick('myPage')"
+        >
+          마이페이지
+        </button>
+        <button class="btn-logout" @click="logout">로그아웃</button>
+      </div>
+
+      <div v-if="loginStore.isLoggedIn == false" class="nav-bar-btnbox btn-isNotLoggedIn">
         <button
           type="submit"
           class="nav-bar-btn nav-bar__button--login"
@@ -139,17 +193,20 @@ function goToFindIdPwPage() {
 
 <style scoped>
 /*---nav아웃라인---*/
-#nav-default {
-  position: relative; /* ✅ 변경 */
-  z-index: 0; /* ✅ 명시적으로 낮춤 */
+#nav {
   display: flex;
   flex-direction: column;
+
   width: calc(var(--space-xl) * 7.5);
   height: 100vh;
+
   background-color: var(--color-purple);
+
+  /* position: relative;
+  z-index: 0; */
 }
-#nav-default,
-#nav-default > * {
+#nav,
+#nav > * {
   align-items: center;
   text-align: center;
 }
@@ -163,12 +220,48 @@ h1 img {
 }
 /*---nav아웃라인 END---*/
 
-/*---버튼박스 영역---*/
+/*---nav바 프로필사진(사용자)---*/
+.nav-bar-profile {
+  width: calc(var(--space-m) * 7);
+  height: calc(var(--space-m) * 7);
+  margin-top: var(--space-l);
+  border-radius: 50%;
+  overflow: hidden;
+}
+.profile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nav-bar-profile img {
+  width: 100%;
+  margin-bottom: var(--space-m);
+}
+.nav-bar-userName {
+  display: block;
+  color: var(--color-black);
+  font-size: var(--font-l);
+}
+
+/*---nav바 프로필사진(사용자)END---*/
+
+/*---nav버튼박스(재정요약/거래내역조회/마이페이지/로그아웃)---*/
 .nav-bar-btnbox {
+  position: absolute;
   display: flex;
   flex-direction: column;
-  position: absolute;
   bottom: 5%;
+}
+.nav-bar-btnbox button {
+  width: calc(var(--space-xl) * 5.5);
+  height: calc(var(--space-xl) * 1.7);
+  border-radius: var(--space-l);
+  border: none;
+  padding: 0 var(--space-m);
+  margin-bottom: var(--space-m);
+  align-items: center;
+  font-size: var(--font-base);
 }
 .nav-bar-btn {
   background-color: var(--color-purple);
@@ -190,7 +283,11 @@ h1 img {
   background-color: var(--color-purple);
   color: var(--color-black);
 }
-/*---버튼박스 영역 END---*/
+.btn-logout {
+  background-color: var(--color-white);
+  color: var(--color-purple9);
+}
+/*---nav버튼박스(재정요약/거래내역조회/마이페이지/로그아웃)END---*/
 
 /*---로그인폼 영역---*/
 .nav-login-wrapper {

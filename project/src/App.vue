@@ -1,7 +1,6 @@
 <template>
   <div class="app-container">
-    <TheSidebar v-if="!loginStore.isLoggedIn" />
-    <TheSidebarLogin v-else />
+    <SideBar/>
 
     <div class="main-view">
       <RouterView v-slot="{ Component }">
@@ -20,8 +19,7 @@ import { ref } from 'vue'
 import { onMounted } from 'vue'
 import { useLoginStore } from '@/stores/useLoginStore'
 
-import TheSidebar from '@/layouts/TheSidebar.vue'
-import TheSidebarLogin from '@/layouts/TheSidebarLogin.vue'
+import SideBar from '@/layouts/SideBar.vue'
 
 import ModalAddPost from '@/components/modal/ModalAddPost.vue'
 import ModalImport from '@/components/modal/ModalImport.vue'
